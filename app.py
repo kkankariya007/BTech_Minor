@@ -33,8 +33,7 @@ async def root():
 @app.post("/upload")
 async def receiveFile(file: bytes = File(...)):
     image=Image.open(io.BytesIO(file))
-    # image.show(image)
-    if not hasattr(PIL.Image, 'Resampling'):  # Pillow<9.0
+    if not hasattr(PIL.Image, 'Resampling'):
         PIL.Image.Resampling = PIL.Image
     np.set_printoptions(suppress=True)
 
