@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:path/path.dart' as path;
+import 'package:http_parser/http_parser.dart';
 
-
+String predict="";
 void main() {
 
   runApp(MaterialApp(
@@ -27,6 +27,42 @@ class _CameraScreenState extends State<CameraScreen> {
     });
   }
 
+  Future upload() async{
+
+    try {
+      var request = http.MultipartRequest(
+        "POST",
+        Uri.parse("https://disease.up.railway.app/upload"),
+      );
+
+      var imageFile = File(_image!.path);
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file', // This should match the field name expected by the server
+          imageFile.path,
+          contentType: MediaType('image', 'jpeg'), // Change to 'image', 'jpg' or 'image', 'png' if needed
+        ),
+      );
+
+      var response = await request.send();
+      var responseData = await response.stream.toBytes();
+      var result = String.fromCharCodes(responseData);
+
+      predict=result.toString();
+      print(predict);
+      // int idx=predict.indexOf('":"');
+      // String charac=predict.substring(2,idx);
+      // String anime=predict.substring(idx+3,predict.length-2);
+
+    }
+    catch(e)
+    {
+      print(e);
+    }
+    // _hasp=true;
+
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -43,6 +79,22 @@ class _CameraScreenState extends State<CameraScreen> {
               onPressed: _captureImage,
               child: Text('Take a Picture'),
             ),
+            SizedBox(height: 10,),
+            ElevatedButton(
+                onPressed: () async {
+                  showDialog(
+                    context: context,
+                    builder: (context){
+                      return const Center(child: CircularProgressIndicator());
+                    },
+                  );
+                  await upload();
+                  Navigator.of(context).pop();
+                  Navigator.of(context).push(MaterialPageRoute(builder: (context)=>const Predict()));
+
+                },
+            child: Text('Predict')
+            ),
           ],
         ),
       ),
@@ -50,32 +102,33 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 }
 
-Future upload() async{
 
-  try {
-    var request = http.MultipartRequest(
-        "POST", Uri.parse("https://anizam.up.railway.app/name/"));
-    // var audio = await http.MultipartFile.fromBytes('file',
-    //     await File.fromUri(Uri.parse("/storage/emulated/0/Download/Anizam/temp.wav")).readAsBytes(),
-        filename: 'temp.wav',
-        contentType: MediaType.parse('audio/wav')//'audio', 'wav')
+class Predict extends StatefulWidget {
+  const Predict({Key? key}) : super(key: key);
+
+  @override
+  State<Predict> createState() => _PredictState();
+}
+
+class _PredictState extends State<Predict> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        elevation: 0,
+
+        title: const Text('Early Crop Disease Detection'),
+      ),
+      body:
+      Center(child: Text(predict.substring(1,predict.length-3),
+      style: TextStyle(
+      fontSize: 21,
+      fontWeight: FontWeight.bold,
+      letterSpacing: 1.2,
+      color: predict.substring(1,predict.length-3)=="Infected"?Colors.red:Colors.green,
+      ),
+      ),
+    ),
     );
-
-    request.files.add(audio);
-    var response = await request.send();
-    var responseData = await response.stream.toBytes();
-    var result = String.fromCharCodes(responseData);
-
-    String predict=result.toString();
-    int idx=predict.indexOf('":"');
-    charac=predict.substring(2,idx);
-    anime=predict.substring(idx+3,predict.length-2);
-
   }
-  catch(e)
-  {
-    // print(e);
-  }
-  // _hasp=true;
-
 }
